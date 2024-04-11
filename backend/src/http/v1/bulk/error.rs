@@ -14,9 +14,27 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-pub mod check;
-mod errors;
-pub mod http;
-pub mod sentry_util;
-#[cfg(feature = "worker")]
-pub mod worker;
+use warp::reject;
+
+/// Catch all error struct for the bulk endpoints
+#[derive(Debug)]
+pub enum BulkError {
+	EmptyInput,
+	Serde(serde_json::Error),
+	Lapin(lapin::Error),
+}
+
+// Defaults to Internal server error
+impl reject::Reject for BulkError {}
+
+impl From<serde_json::Error> for BulkError {
+	fn from(e: serde_json::Error) -> Self {
+		BulkError::Serde(e)
+	}
+}
+
+impl From<lapin::Error> for BulkError {
+	fn from(e: lapin::Error) -> Self {
+		BulkError::Lapin(e)
+	}
+}
